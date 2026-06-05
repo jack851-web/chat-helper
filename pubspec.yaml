@@ -1,0 +1,45 @@
+name: chat_helper
+description: Chat-Helper - 智能聊天辅助工具，悬浮球截图 + AI话术建议
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # UI
+  cupertino_icons: ^1.0.8
+  
+  # State
+  provider: ^6.1.2
+  
+  # ML Kit OCR (AI-1本地文字识别)
+  google_mlkit_text_recognition: ^0.13.0
+  
+  # Storage
+  sqflite: ^2.3.3
+  path_provider: ^2.1.4
+  path: ^1.9.0
+  shared_preferences: ^2.3.3
+  
+  # Security
+  flutter_secure_storage: ^9.2.4
+  
+  # Network (AI-2云端建议)
+  http: ^1.2.2
+  
+  # Utilities
+  uuid: ^4.5.1
+  collection: ^1.18.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/

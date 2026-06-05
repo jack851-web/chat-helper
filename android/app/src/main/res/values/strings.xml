@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="accessibility_service_description">Chat-Helper 截图辅助服务。用于在不弹"录制屏幕"对话框的情况下截取手机屏幕，以提供AI聊天建议。不上传任何图像数据。</string>
+</resources>

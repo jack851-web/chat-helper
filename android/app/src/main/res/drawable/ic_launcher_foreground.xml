@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Chat-Helper App Icon - 聊天气泡 + 闪电（自适应安全区域内）-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 聊天气泡主体（圆角矩形 + 左下尾巴）-->
+    <path
+        android:pathData="
+            M38,26
+            L70,26
+            Q78,26 78,34
+            L78,56
+            Q78,64 70,64
+            L48,64
+            L38,76
+            L40,64
+            L38,64
+            Q30,64 30,56
+            L30,34
+            Q30,26 38,26
+            Z"
+        android:fillColor="#6C5CE7" />
+
+    <!-- 气泡高光（顶部浅色弧线，增加质感）-->
+    <path
+        android:pathData="M36,36 Q54,26 72,36"
+        android:strokeColor="#8B7CF6"
+        android:strokeWidth="2"
+        android:fillColor="#00000000" />
+
+    <!-- AI 闪电符号 -->
+    <path
+        android:pathData="
+            M54,34
+            L49,47
+            L55,47
+            L48,60
+            L61,45
+            L54,45
+            L57,34
+            Z"
+        android:fillColor="#FFFFFF" />
+
+</vector>
