@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'main.dart';
 import 'services/platform_service.dart';
-import 'services/ocr_service.dart';
 import 'ui/theme/app_theme.dart';
 import 'ui/screens/home_screen.dart';
 
@@ -35,9 +34,18 @@ class _ChatHelperAppState extends State<ChatHelperApp>
   Future<void> _startup() async {
     try {
       final platform = context.read<PlatformService>();
-      await platform.startService();
-      await platform.showFloatingBall();
-    } catch (_) {}
+      final serviceOk = await platform.startService();
+      final ballShown = await platform.showFloatingBall();
+      if (!ballShown) {
+        debugPrint('[app] 悬浮球未显示（缺少悬浮窗权限或启动失败）');
+        // 不弹错让用户烦躁；权限页已自动打开，用户授权后下次启动即可
+      }
+      if (!serviceOk) {
+        debugPrint('[app] 前台服务启动失败');
+      }
+    } catch (e) {
+      debugPrint('[app] _startup error: $e');
+    }
   }
 
   @override
@@ -55,7 +63,6 @@ class _ChatHelperAppState extends State<ChatHelperApp>
     if (state == AppLifecycleState.detached) {
       try {
         context.read<PlatformService>().dispose();
-        context.read<OcrService>().dispose();
       } catch (_) {}
     }
   }

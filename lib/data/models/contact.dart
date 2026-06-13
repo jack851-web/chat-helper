@@ -1,16 +1,22 @@
 class Contact {
   final String id;
-  String name;
-  String? avatarUri;
-  String? relationship;
-  String? gender;
-  String? notes;
-  String tonePreference;
-  String lengthPreference;
-  double creativityPreference;
+  final String name;
+  final String? avatarUri;
+  final String? relationship;
+  final String? gender;
+  final String? notes;
+  final String tonePreference;
+  final String lengthPreference;
+  final double creativityPreference;
   final DateTime createdAt;
-  DateTime updatedAt;
-  DateTime? lastActiveAt;
+  final DateTime updatedAt;
+  final DateTime? lastActiveAt;
+
+  // ---- V2 字段：联系人画像 ----
+  /// 豆包最近一次生成的画像摘要（覆盖式更新）
+  final String? latestInsight;
+  /// 画像更新时间
+  final DateTime? insightUpdatedAt;
 
   Contact({
     required this.id,
@@ -25,6 +31,8 @@ class Contact {
     required this.createdAt,
     required this.updatedAt,
     this.lastActiveAt,
+    this.latestInsight,
+    this.insightUpdatedAt,
   });
 
   Map<String, dynamic> toMap() => {
@@ -40,6 +48,8 @@ class Contact {
         'created_at': createdAt.millisecondsSinceEpoch,
         'updated_at': updatedAt.millisecondsSinceEpoch,
         'last_active_at': lastActiveAt?.millisecondsSinceEpoch,
+        'latest_insight': latestInsight,
+        'insight_updated_at': insightUpdatedAt?.millisecondsSinceEpoch,
       };
 
   factory Contact.fromMap(Map<String, dynamic> map) {
@@ -72,7 +82,11 @@ class Contact {
       updatedAt:
           DateTime.fromMillisecondsSinceEpoch(safeInt(map['updated_at'])),
       lastActiveAt: map['last_active_at'] != null
-            ? DateTime.fromMillisecondsSinceEpoch(safeInt(map['last_active_at']))
+          ? DateTime.fromMillisecondsSinceEpoch(safeInt(map['last_active_at']))
+          : null,
+      latestInsight: safeStr(map['latest_insight']),
+      insightUpdatedAt: map['insight_updated_at'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(safeInt(map['insight_updated_at']))
           : null,
     );
   }
@@ -87,6 +101,8 @@ class Contact {
     String? lengthPreference,
     double? creativityPreference,
     DateTime? lastActiveAt,
+    String? latestInsight,
+    DateTime? insightUpdatedAt,
   }) {
     return Contact(
       id: id,
@@ -101,6 +117,8 @@ class Contact {
       createdAt: createdAt,
       updatedAt: DateTime.now(),
       lastActiveAt: lastActiveAt ?? this.lastActiveAt,
+      latestInsight: latestInsight ?? this.latestInsight,
+      insightUpdatedAt: insightUpdatedAt ?? this.insightUpdatedAt,
     );
   }
 }

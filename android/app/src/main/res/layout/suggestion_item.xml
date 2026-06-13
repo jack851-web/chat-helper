@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 单条建议项（不依赖 CardView） -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:layout_marginBottom="10dp"
+    android:background="@drawable/bg_suggestion_item"
+    android:padding="14dp">
+
+    <!-- 风格标签 + 操作按钮行 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/tv_style_tag"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="3dp"
+            android:background="@drawable/bg_suggestion_style_tag"
+            android:text="风格名"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:textColor="#6C5CE7" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <!-- 复制按钮：用 ImageView + ?android:attr 强制使用系统 attr，规避 WindowManager 全局浮窗中 AppCompat 主题缺失问题 -->
+        <ImageView
+            android:id="@+id/btn_copy"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_copy_small"
+            android:contentDescription="复制"
+            android:clickable="true"
+            android:focusable="true" />
+    </LinearLayout>
+
+    <!-- 话术正文 -->
+    <TextView
+        android:id="@+id/tv_suggestion_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="建议内容..."
+        android:textSize="15sp"
+        android:lineSpacingMultiplier="1.5"
+        android:textColor="#1A1A1A" />
+
+    <!-- 理由 -->
+    <TextView
+        android:id="@+id/tv_reason"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="理由..."
+        android:textSize="12sp"
+        android:textStyle="italic"
+        android:textColor="#999999"
+        android:visibility="gone" />
+</LinearLayout>

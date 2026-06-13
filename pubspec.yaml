@@ -15,9 +15,6 @@ dependencies:
   # State
   provider: ^6.1.2
   
-  # ML Kit OCR (AI-1本地文字识别)
-  google_mlkit_text_recognition: ^0.13.0
-  
   # Storage
   sqflite: ^2.3.3
   path_provider: ^2.1.4
@@ -27,7 +24,7 @@ dependencies:
   # Security
   flutter_secure_storage: ^9.2.4
   
-  # Network (AI-2云端建议)
+  # Network (豆包 AI API)
   http: ^1.2.2
   
   # Utilities

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../../data/database.dart';
 import '../../data/models/contact.dart';
+import '../../ui/theme/app_theme.dart';
 import '../../utils/constants.dart';
 
 class AddEditContactScreen extends StatefulWidget {
@@ -33,15 +34,19 @@ class _AddEditContactScreenState extends State<AddEditContactScreen> {
     _nameCtrl = TextEditingController(text: c?.name ?? '');
     _notesCtrl = TextEditingController(text: c?.notes ?? '');
     // 安全兜底：确保 dropdown value 一定在 items 集合中
-    _relationship = _safeDropdownValue(c?.relationship, ContactRelationship.values, null);
+    _relationship =
+        _safeDropdownValue(c?.relationship, ContactRelationship.values, null);
     _gender = _safeDropdownValue(c?.gender, ['male', 'female', 'other'], null);
-    _tone = _safeDropdownValue(c?.tonePreference, TonePreference.values, 'neutral')!;
-    _lengthPref = _safeDropdownValue(c?.lengthPreference, LengthPreference.values, 'medium')!;
+    _tone = _safeDropdownValue(
+        c?.tonePreference, TonePreference.values, 'neutral')!;
+    _lengthPref = _safeDropdownValue(
+        c?.lengthPreference, LengthPreference.values, 'medium')!;
     _creativity = c?.creativityPreference ?? 0.5;
   }
 
   /// 如果 value 在 validValues 中则返回原值，否则返回 fallback
-  String? _safeDropdownValue(String? value, Iterable<dynamic> validValues, String? fallback) {
+  String? _safeDropdownValue(
+      String? value, Iterable<dynamic> validValues, String? fallback) {
     if (value == null) return fallback;
     for (final v in validValues) {
       final name = v is Enum ? v.name : v.toString();
@@ -78,34 +83,24 @@ class _AddEditContactScreenState extends State<AddEditContactScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 头像
+              // 头像（根据名字生成 Pastel 色彩预览）
               Center(
-                child: Stack(
-                  children: [
-                    CircleAvatar(
-                      radius: 40,
-                      backgroundColor:
-                          theme.colorScheme.primary.withValues(alpha: 0.16),
-                      child: Text(
-                        _nameCtrl.text.isNotEmpty
-                            ? _nameCtrl.text[0]
-                            : '?',
-                        style: TextStyle(
-                            fontSize: 32,
-                            color: theme.colorScheme.primary),
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: CircleAvatar(
-                        radius: 14,
-                        backgroundColor: theme.colorScheme.primary,
-                        child: const Icon(Icons.camera_alt,
-                            size: 14, color: Colors.white),
-                      ),
-                    ),
-                  ],
+                child: CircleAvatar(
+                  radius: 40,
+                  backgroundColor: _nameCtrl.text.isNotEmpty
+                      ? AppTheme.nameToPastelColor(_nameCtrl.text)
+                      : theme.colorScheme.primary.withValues(alpha: 0.16),
+                  child: Text(
+                    _nameCtrl.text.isNotEmpty ? _nameCtrl.text[0] : '?',
+                    style: TextStyle(
+                        fontSize: 32,
+                        color: _nameCtrl.text.isNotEmpty
+                            ? (AppTheme.needsDarkText(
+                                    AppTheme.nameToPastelColor(_nameCtrl.text))
+                                ? Colors.white
+                                : Colors.black87)
+                            : theme.colorScheme.primary),
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
@@ -127,8 +122,7 @@ class _AddEditContactScreenState extends State<AddEditContactScreen> {
 
               // 关系分类
               DropdownButtonFormField<String>(
-                // ignore: deprecated_member_use
-                value: _relationship,
+                initialValue: _relationship,
                 decoration: const InputDecoration(
                   labelText: '关系分类',
                   prefixIcon: Icon(Icons.label),
@@ -145,8 +139,7 @@ class _AddEditContactScreenState extends State<AddEditContactScreen> {
 
               // 性别
               DropdownButtonFormField<String>(
-                // ignore: deprecated_member_use
-                value: _gender,
+                initialValue: _gender,
                 decoration: const InputDecoration(
                   labelText: '性别（可选）',
                   prefixIcon: Icon(Icons.wc),
@@ -216,8 +209,7 @@ class _AddEditContactScreenState extends State<AddEditContactScreen> {
                       max: 1,
                       divisions: 10,
                       label: (_creativity * 10).round().toString(),
-                      onChanged: (v) =>
-                          setState(() => _creativity = v),
+                      onChanged: (v) => setState(() => _creativity = v),
                     ),
                   ),
                   SizedBox(

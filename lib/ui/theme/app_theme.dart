@@ -22,6 +22,21 @@ class AppTheme {
   static const Color success = Color(0xFF10B981);
   static const Color error = Color(0xFFEF4444);
 
+  /// 根据名字生成一致的 Pastel 色彩（用于联系人头像）
+  static Color nameToPastelColor(String name) {
+    return HSLColor.fromAHSL(
+      1.0,
+      (name.hashCode % 360).abs().toDouble(),
+      0.55,
+      0.80,
+    ).toColor();
+  }
+
+  /// 判断浅色背景是否需要深色文字
+  static bool needsDarkText(Color color) {
+    return HSLColor.fromColor(color).lightness < 0.5;
+  }
+
   static ThemeData lightTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.light,

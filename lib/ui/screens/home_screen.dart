@@ -5,6 +5,7 @@ import '../../main.dart';
 import '../../data/database.dart';
 import '../../data/models/contact.dart';
 import '../../data/models/draft.dart';
+import '../../utils/constants.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../services/platform_service.dart';
 import 'contacts_screen.dart';
@@ -42,12 +43,9 @@ class _HomeScreenState extends State<HomeScreen> {
         onDestinationSelected: (i) => setState(() => _currentTab = i),
         destinations: const [
           NavigationDestination(icon: Icon(Icons.people), label: '联系人'),
-          NavigationDestination(
-              icon: Icon(Icons.history), label: '记录'),
-          NavigationDestination(
-              icon: Icon(Icons.edit_note), label: '草稿'),
-          NavigationDestination(
-              icon: Icon(Icons.settings), label: '设置'),
+          NavigationDestination(icon: Icon(Icons.history), label: '记录'),
+          NavigationDestination(icon: Icon(Icons.edit_note), label: '草稿'),
+          NavigationDestination(icon: Icon(Icons.settings), label: '设置'),
         ],
       ),
     );
@@ -57,7 +55,7 @@ class _HomeScreenState extends State<HomeScreen> {
 // ---- 联系人Tab ----
 class _ContactsTab extends StatefulWidget {
   final AppDatabase db;
-  const _ContactsTab({required this.db});
+  const _ContactsTab({required this.db, super.key});
 
   @override
   State<_ContactsTab> createState() => _ContactsTabState();
@@ -65,17 +63,69 @@ class _ContactsTab extends StatefulWidget {
 
 class _ContactsTabState extends State<_ContactsTab> {
   List<Contact> _contacts = [];
+  List<Contact> _filteredContacts = [];
   bool _loading = true;
+  final _searchCtrl = TextEditingController();
+  bool _isSearching = false;
+
+  /// 获取过滤后的联系人列表
+  List<Contact> get _displayContacts =>
+      _isSearching && _searchCtrl.text.isNotEmpty
+          ? _filteredContacts
+          : _contacts;
 
   @override
   void initState() {
     super.initState();
+    _loadContacts();
+    // 监听 AppState 变化（如 contactId 切换、联系人画像更新后）刷新列表
+    // 用 context.read 而不是 watch，避免在 build 中重读
+    final appState = context.read<AppState>();
+    appState.addListener(_onAppStateChanged);
+  }
+
+  @override
+  void dispose() {
+    try {
+      context.read<AppState>().removeListener(_onAppStateChanged);
+    } catch (_) {
+      // context 已不可用（dispose 期间），静默忽略
+    }
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  /// 搜索过滤：按名字或关系模糊匹配
+  void _onSearchChanged(String query) {
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) {
+      setState(() => _filteredContacts = []);
+      return;
+    }
+    setState(() {
+      _filteredContacts = _contacts.where((c) {
+        return c.name.toLowerCase().contains(q) ||
+            (c.relationship?.toLowerCase().contains(q) ?? false) ||
+            (c.notes?.toLowerCase().contains(q) ?? false);
+      }).toList();
+    });
+  }
+
+  /// 简易防抖：30 秒内不重复全量重载
+  DateTime _lastReload = DateTime.fromMillisecondsSinceEpoch(0);
+
+  void _onAppStateChanged() {
+    if (!mounted) return;
+    final now = DateTime.now();
+    if (now.difference(_lastReload).inSeconds < 5) return;
+    _lastReload = now;
     _loadContacts();
   }
 
   Future<void> _loadContacts() async {
     setState(() => _loading = true);
     final contacts = await widget.db.getContacts();
+    if (!mounted) return;
     setState(() {
       _contacts = contacts;
       _loading = false;
@@ -88,9 +138,10 @@ class _ContactsTabState extends State<_ContactsTab> {
     final theme = Theme.of(context);
     final currentContactName = appState.currentContactId != null
         ? _contacts
-            .where((c) => c.id == appState.currentContactId)
-            .map((c) => c.name)
-            .firstOrNull ?? '未选择'
+                .where((c) => c.id == appState.currentContactId)
+                .map((c) => c.name)
+                .firstOrNull ??
+            '未选择'
         : '未选择';
 
     return Scaffold(
@@ -126,87 +177,125 @@ class _ContactsTabState extends State<_ContactsTab> {
           const SizedBox(width: 8),
         ],
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _contacts.isEmpty
-              ? _EmptyState(
-                  icon: Icons.person_add_alt,
-                  title: '还没有联系人',
-                  subtitle: '创建联系人档案，开始记录对话',
-                  actionLabel: '创建第一个联系人',
-                  onAction: () => _addContact(context),
-                )
-              : RefreshIndicator(
-                  onRefresh: _loadContacts,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 8),
-                    itemCount: _contacts.length + 1,
-                    itemBuilder: (context, index) {
-                      if (index == 0) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: Text(
-                            '当前沟通对象: $currentContactName',
-                            style: theme.textTheme.bodySmall
-                                ?.copyWith(color: theme.colorScheme.primary),
-                          ),
-                        );
-                      }
-                      final contact = _contacts[index - 1];
-                      final isActive =
-                          contact.id == appState.currentContactId;
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: isActive
-                                ? theme.colorScheme.primary
-                                : theme.colorScheme.surfaceContainerHighest,
-                            child: Text(
-                              contact.name.isNotEmpty ? contact.name[0] : '?',
-                              style: TextStyle(
-                                color: isActive
-                                    ? Colors.white
-                                    : theme.colorScheme.onSurface,
-                              ),
+      body: Column(
+        children: [
+          // 搜索栏
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: SearchBar(
+              controller: _searchCtrl,
+              hintText: '搜索联系人...',
+              leading: const Icon(Icons.search, size: 20),
+              trailing: _isSearching
+                  ? [
+                      IconButton(
+                        icon: const Icon(Icons.clear, size: 20),
+                        onPressed: () {
+                          _searchCtrl.clear();
+                          setState(() {
+                            _isSearching = false;
+                            _filteredContacts = [];
+                          });
+                        },
+                      )
+                    ]
+                  : null,
+              onChanged: (val) {
+                setState(() => _isSearching = val.isNotEmpty);
+                _onSearchChanged(val);
+              },
+            ),
+          ),
+          // 联系人列表
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : _displayContacts.isEmpty && _contacts.isNotEmpty
+                    ? Center(
+                        child: Text('未找到匹配的联系人',
+                            style: theme.textTheme.bodyMedium
+                                ?.copyWith(color: theme.colorScheme.outline)),
+                      )
+                    : _contacts.isEmpty
+                        ? _EmptyState(
+                            icon: Icons.person_add_alt,
+                            title: '还没有联系人',
+                            subtitle: '创建联系人档案，开始记录对话',
+                            actionLabel: '创建第一个联系人',
+                            onAction: () => _addContact(context),
+                          )
+                        : RefreshIndicator(
+                            onRefresh: _loadContacts,
+                            child: ListView.builder(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 4),
+                              itemCount: _displayContacts.length,
+                              itemBuilder: (context, index) {
+                                final contact = _displayContacts[index];
+                                final isActive =
+                                    contact.id == appState.currentContactId;
+                                return Card(
+                                  margin: const EdgeInsets.only(bottom: 8),
+                                  child: ListTile(
+                                    leading: CircleAvatar(
+                                      backgroundColor: isActive
+                                          ? theme.colorScheme.primary
+                                          : AppTheme.nameToPastelColor(
+                                              contact.name),
+                                      child: Text(
+                                        contact.name.isNotEmpty
+                                            ? contact.name[0]
+                                            : '?',
+                                        style: TextStyle(
+                                          color: isActive
+                                              ? Colors.white
+                                              : (AppTheme.needsDarkText(AppTheme
+                                                      .nameToPastelColor(
+                                                          contact.name))
+                                                  ? Colors.white
+                                                  : Colors.black87),
+                                        ),
+                                      ),
+                                    ),
+                                    title: Row(
+                                      children: [
+                                        Text(contact.name,
+                                            style: const TextStyle(
+                                                fontWeight: FontWeight.w600)),
+                                        if (isActive) ...[
+                                          const SizedBox(width: 8),
+                                          Icon(Icons.check_circle,
+                                              size: 18,
+                                              color: theme.colorScheme.primary),
+                                        ],
+                                      ],
+                                    ),
+                                    subtitle: Text(
+                                      contact.relationship ?? '未分类',
+                                      style: theme.textTheme.bodySmall,
+                                    ),
+                                    trailing: contact.lastActiveAt != null
+                                        ? Text(
+                                            formatRelativeTime(
+                                                contact.lastActiveAt!),
+                                            style: theme.textTheme.bodySmall,
+                                          )
+                                        : null,
+                                    onTap: () {
+                                      appState.setCurrentContact(contact.id);
+                                      widget.db.touchContact(contact.id);
+                                      _loadContacts();
+                                    },
+                                    onLongPress: () =>
+                                        _showContactActions(context, contact),
+                                  ),
+                                );
+                              },
                             ),
                           ),
-                          title: Row(
-                            children: [
-                              Text(contact.name,
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.w600)),
-                              if (isActive) ...[
-                                const SizedBox(width: 8),
-                                Icon(Icons.check_circle,
-                                    size: 18,
-                                    color: theme.colorScheme.primary),
-                              ],
-                            ],
-                          ),
-                          subtitle: Text(
-                            contact.relationship ?? '未分类',
-                            style: theme.textTheme.bodySmall,
-                          ),
-                          trailing: contact.lastActiveAt != null
-                              ? Text(
-                                  formatRelativeTime(contact.lastActiveAt!),
-                                  style: theme.textTheme.bodySmall,
-                                )
-                              : null,
-                          onTap: () {
-                            appState.setCurrentContact(contact.id);
-                            widget.db.touchContact(contact.id);
-                            _loadContacts();
-                          },
-                          onLongPress: () => _showContactActions(
-                              context, contact),
-                        ),
-                      );
-                    },
-                  ),
-                ),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _addContact(context),
         child: const Icon(Icons.add),
@@ -256,17 +345,15 @@ class _ContactsTabState extends State<_ContactsTab> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) =>
-                        MemoryTimelineScreen(contactId: contact.id),
+                    builder: (_) => MemoryTimelineScreen(contactId: contact.id),
                   ),
                 );
               },
             ),
             ListTile(
-              leading:
-                  const Icon(Icons.delete, color: AppTheme.error),
-              title: const Text('删除联系人',
-                  style: TextStyle(color: AppTheme.error)),
+              leading: const Icon(Icons.delete, color: AppTheme.error),
+              title:
+                  const Text('删除联系人', style: TextStyle(color: AppTheme.error)),
               onTap: () async {
                 // 同步使用 BuildContext 必须先于 await
                 final outerContext = context;
@@ -277,8 +364,7 @@ class _ContactsTabState extends State<_ContactsTab> {
                   context: outerContext,
                   builder: (dialogCtx) => AlertDialog(
                     title: const Text('确认删除'),
-                    content: Text(
-                        '将删除"${contact.name}"及其所有对话记录，此操作不可恢复。'),
+                    content: Text('将删除"${contact.name}"及其所有对话记录，此操作不可恢复。'),
                     actions: [
                       TextButton(
                           onPressed: () => Navigator.pop(dialogCtx, false),
@@ -311,7 +397,7 @@ class _ContactsTabState extends State<_ContactsTab> {
 // ---- 对话记录Tab ----
 class _MemoriesTab extends StatelessWidget {
   final AppDatabase db;
-  const _MemoriesTab({required this.db});
+  const _MemoriesTab({required this.db, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -333,7 +419,7 @@ class _MemoriesTab extends StatelessWidget {
 // ---- 草稿Tab ----
 class _DraftsTab extends StatefulWidget {
   final AppDatabase db;
-  const _DraftsTab({required this.db});
+  const _DraftsTab({required this.db, super.key});
 
   @override
   State<_DraftsTab> createState() => _DraftsTabState();
@@ -463,8 +549,7 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(height: 8),
             Text(subtitle,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurface
-                        .withValues(alpha: 0.6)),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
                 textAlign: TextAlign.center),
             if (actionLabel != null && onAction != null) ...[
               const SizedBox(height: 24),
@@ -475,14 +560,4 @@ class _EmptyState extends StatelessWidget {
       ),
     );
   }
-}
-
-/// 公共工具：格式化为相对时间
-String formatRelativeTime(DateTime dt) {
-  final now = DateTime.now();
-  final diff = now.difference(dt);
-  if (diff.inMinutes < 1) return '刚刚';
-  if (diff.inHours < 1) return '${diff.inMinutes}分钟前';
-  if (diff.inDays < 1) return '${diff.inHours}小时前';
-  return '${diff.inDays}天前';
 }

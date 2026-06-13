@@ -2,34 +2,40 @@
 
 智能聊天辅助工具 — 悬浮球截图 + AI 话术建议。
 
-> **当前版本**：v1.0.0（MVP 阶段）
+> **当前版本**：v2.5（UI深度优化版）
 >
-> **PRD 版本**：v1.5（见 [PRD.md](PRD.md)）
+> **PRD 版本**：v2.5（见 [PRD.md](PRD.md) §15 UI优化路线图）
 
 ---
 
 ## 一句话定位
 
-常驻桌面悬浮球，一键截图识别聊天内容，AI 生成回复建议，帮你快速想好怎么回。
+常驻桌面悬浮球，一键截图识别聊天内容，AI 生成回复建议，帮你快速想好怎么回。**全程无需切回 App，浮窗直接浮在聊天界面上方。**
 
 ## 核心功能
 
 | 功能 | 状态 | 说明 |
 |------|------|------|
 | 无感截图 (AccessibilityService) | ✅ 已实现 | Android 11+，不弹录制对话框 |
-| 悬浮球拖拽 + 点击触发 | ✅ 已实现 | WindowManager 全局浮窗 |
-| 对话文字提取 (ML Kit OCR) | ✅ 已实现 | 本地 OCR，无需网络 |
-| 规则引擎解析 (气泡位置 → me/partner) | ✅ 已实现 | X 坐标判定说话人 |
-| AI 回复建议 (DeepSeek API) | ✅ 已实现 | 多风格 + 可配置参数 |
+| 悬浮球拖拽 + 点击触发 + 状态动画 | ✅ 已实现 | 四状态动画(空闲/处理中/成功/失败) + 进度阶段提示 |
+| **状态同步修复** (v2.5) | ✅ 已实现 | 返回App后球不再错误变空闲，onResume自动恢复处理状态 |
+| **进度阶段提示** (v2.5) | ✅ 已实现 | 三阶段动态文字: 识别中→识别对话中→生成建议中 |
+| **联系人标签** (v2.5) | ✅ 已实现 | 悬浮球旁显示当前选中联系人名字 |
+| **草稿入口增强** (v2.5) | ✅ 已实现 | 建议浮窗新增"存入草稿"按钮 |
+| **悬浮球保活/自恢复** (v2.5) | ✅ 已实现 | App被杀重启后自动重建悬浮球 |
+| AI 对话提取 + 回复建议 (豆包 Seed Vision) | ✅ 已实现 | 单次调用完成对话提取+建议生成 |
+| 增量去重 (防重复入库) | ✅ 已实现 | 基于最近6条记忆比对 |
+| 全局原生浮窗卡片 (WindowManager) | ✅ 已实现 | 聊天App上方弹出，含换一批/存入草稿/复制功能 |
+| 三大场景自动判断 (A/B/C) | ✅ 已实现 | 待回复/主动发起/延续追加 |
 | 联系人档案管理 | ✅ 已实现 | CRUD + 语气/长度/创意度偏好 |
-| 话术草稿编辑器 | ✅ 已实现 | 预填 AI 建议，自由修改 |
+| 话术草稿编辑器 | ✅ 已实现 | 预填AI建议，自由修改，自动保存 |
 | 历史对话记录 | ✅ 已实现 | 时间线视图 + 搜索 + 删除 |
-| 设置页 (API Key / 模型 / 深色模式) | ✅ 已实现 | DeepSeek 配置完整 |
-| 豆包 Vision 对话提取 (AI-1) | ⏳ 待实现 | PRD v1.5 规划中 |
-| 全局原生浮窗卡片 | ⏳ 待实现 | 当前使用 App 内 BottomSheet |
-| 悬浮球状态动画 (处理中/成功/失败) | ⏳ 待实现 | PRD v1.5 规划中 |
-| 增量去重 (防重复入库) | ⏳ 待实现 | PRD v1.5 规划中 |
-| 三大场景自动判断 (A/B/C) | ⏳ 待实现 | PRD v1.5 规划中 |
+| 设置页 (API Key / 模型 / 浮窗时间 / 快速回复) | ✅ 已实现 | 豆包配置完整 |
+| 网络预检 + 异常分类 | ✅ 已实现 | 无网立即提示 / 四类异常精准提示 |
+| **JSON修复性解析** (v2.5) | ✅ 已实现 | 6级容错: Markdown提取→边界定位→尾逗号→截断补全→部分提取兜底 |
+| **常量统一配置中心** (v2.5) | ✅ 已实现 | AppConstants 统一管理 Dart/Java 关键常量 |
+| **MethodChannel协议版本协商** (v2.5) | ✅ 已实现 | 启动时检测两端兼容性 |
+| 深色模式 | ✅ 已实现 | 浅色/深色主题切换 |
 
 ## 技术栈
 
@@ -37,8 +43,7 @@
 |----|------|
 | **跨端框架** | Flutter (Dart) |
 | **平台** | Android（依赖 AccessibilityService / WindowManager） |
-| **本地 OCR** | Google ML Kit Text Recognition |
-| **云端 AI** | DeepSeek API (`api.deepseek.com`) |
+| **云端 AI** | 火山引擎 豆包 Seed Vision (`ark.cn-beijing.volces.com`) |
 | **本地存储** | SQLite (sqflite) |
 | **安全存储** | flutter_secure_storage (API Key) |
 | **状态管理** | Provider |
@@ -49,37 +54,47 @@
 chat-helper/
 ├── android/                          # Android 原生层
 │   └── app/src/main/java/com/chathelper/app/
-│       ├── MainActivity.java          # Flutter ↔ Native 通信桥接
-│       ├── FloatingBallService.java   # 悬浮球服务 (WindowManager)
+│       ├── MainActivity.java          # Flutter↔Native通信桥接 + 悬浮球管理
+│       ├── FloatingBallService.java   # 悬浮球服务(WindowManager)
 │       └── ScreenshotAccessibilityService.java  # 无感截图服务
 ├── lib/
-│   ├── main.dart                      # 入口 + 路由
-│   ├── app.dart                       # Provider 状态初始化
+│   ├── main.dart                      # 入口 + 路由 + 协议版本检查
+│   ├── app.dart                       # Provider状态初始化
 │   ├── data/
-│   │   ├── database.dart              # SQLite 数据库管理
-│   │   └── models/                    # 数据模型 (Contact, Suggestion, etc.)
+│   │   ├── database.dart              # SQLite数据库管理
+│   │   └── models/                    # 数据模型(Contact/Screenshot/Suggestion/Memory/Draft)
 │   ├── services/
-│   │   ├── ai_service.dart            # DeepSeek API 调用 (AI-2)
-│   │   ├── clipboard_service.dart     # 剪贴板操作
-│   │   ├── ocr_service.dart           # ML Kit OCR 封装 (AI-1 替代方案)
-│   │   ├── platform_service.dart      # 核心业务流程编排
-│   │   └── rule_engine.dart           # OCR 结果解析规则 (气泡→说话人)
+│   │   ├── platform_service.dart      # 核心业务流程编排(截图→AI→落库)
+│   │   ├── vision_service.dart        # 豆包AI单次多任务调用 + 提示词构建
+│   │   └── clipboard_service.dart     # 剪贴板操作
+│   ├── utils/
+│   │   ├── constants.dart             # 统一配置中心(AppConstants)
+│   │   └── json_utils.dart            # JSON修复性解析(6级容错)
 │   └── ui/
-│       ├── screens/                   # 页面 (首页/设置/联系人/历史/草稿/建议卡)
-│       └── theme/                     # 主题 (浅色/深色)
+│       ├── screens/                   # 页面(首页/设置/联系人/历史/草稿)
+│       │   ├── home_screen.dart       # Tab导航(IndexedStack)
+│       │   ├── contacts_screen.dart   # 联系人CRUD列表
+│       │   ├── memory_timeline_screen.dart  # 对话记录时间线
+│       │   ├── draft_editor_screen.dart    # 草稿编辑器
+│       │   └── settings_screen.dart   # 设置页
+│       └── theme/
+│           └── app_theme.dart         # 主题定义(浅色/深色)
+├── android/app/src/main/res/layout/
+│   ├── floating_ball.xml              # 悬浮球布局(圆形+横条+联系人标签)
+│   └── suggestion_overlay.xml         # 建议浮窗布局(含存入草稿按钮)
 ├── assets/images/                     # 图片资源
 ├── test/                              # 测试
-├── PRD.md                             # 产品需求文档 (v1.5)
-└── pubspec.yaml                       # Flutter 项目配置
+├── PRD.md                             # 产品需求文档(v2.5)
+└── pubspec.yaml                       # Flutter项目配置
 ```
 
 ## 快速开始
 
 ### 环境要求
 
-- Flutter SDK >= 3.2.0
+- Flutter SDK >= 3.22.0
 - Android SDK (API 30+, Android 11+)
-- DeepSeek API Key（[获取地址](https://platform.deepseek.com/)）
+- 豆包 API Key（[火山引擎控制台获取](https://console.volcengine.com/ark)）
 
 ### 安装运行
 
@@ -101,50 +116,52 @@ flutter run
 ### 首次使用步骤
 
 1. **开启无障碍服务**：系统设置 → 无障碍 → 已安装的服务 → 开启 **Chat-Helper**
-2. **配置 API Key**：打开 App → 设置 → 填入 **DeepSeek API Key**
+2. **配置 API Key**：打开 App → 设置 → 填入 **豆包 API Key**
 3. **创建联系人**：首页 → 联系人 Tab → 新建联系人并选中
 4. **开启悬浮球**：AppBar 左上角菜单 → 开启悬浮球
 5. **使用**：在任意聊天 App 中点击悬浮球即可触发截图 + AI 建议
 
-## 使用流程（当前版本）
+## 使用流程（当前版本 v2.5）
 
 ```
 聊天App中点击悬浮球
     ↓
+Java端前置校验(已选联系人? 冷却?)
+    ↓
 无感截图 (AccessibilityService)
     ↓
-ML Kit OCR 本地文字识别
+Dart端网络预检(DNS查询, 3s超时)
     ↓
-规则引擎解析 → 判定 me / partner
+豆包单次多任务调用(一次HTTP请求)
+    ├─ 任务A: 视觉对话提取(与最近6条比对→增量落库)
+    ├─ 任务B: 场景判断(A/B/C) + 方向分析
+    └─ 任务C: 生成3条具体话术建议
     ↓
-落库 chat_memories
-    ↓
-DeepSeek API 生成建议 (3条不同风格)
-    ↓
-App 内弹出建议卡片 (BottomSheet)
-    ↓
-复制话术 → 粘贴到聊天框
+全局原生浮窗弹出(聊天App上方, WindowManager)
+    ├─ 场景标签 + 💡对话思路 + 联系人画像
+    ├─ 3条话术(风格+内容+理由) + [复制]
+    ├─ [📋存入草稿] (v2.5新增)
+    └─ [换一批] / [关闭]
 ```
 
-## 与 PRD 的差异说明
+## 版本历史
 
-当前实现与 [PRD.md](PRD.md) v1.5 存在以下已知差异（详见 PRD 文档 §差异分析）：
-
-1. **AI-1 引擎**：PRD 要求豆包 Seed Vision（云端多模态），当前使用 ML Kit OCR（本地）替代
-2. **建议卡片**：PRD 要求全局原生浮窗 (WindowManager)，当前为 App 内 BottomSheet
-3. **悬浮球反馈**：PRD 要求四状态动画（空闲/处理中/成功/失败），当前仅有点击事件
-4. **增量去重**：PRD v1.5 要求基于最近 N 条记忆的去重机制，当前全量入库
-5. **场景感知**：PRD v1.5 要求三大场景自动判断 (A/B/C)，当前 Prompt 未包含时间上下文
-
-以上差异已记录在 PRD 中，后续迭代将逐步对齐。
+| 版本 | 核心变更 |
+|------|----------|
+| **v2.5** | 状态同步修复 + 进度阶段提示 + 联系人标签 + 存入草稿按钮 + 悬浮球保活 + JSON 6级容错解析 + 常量统一 + 协议版本协商 + UI全面优化（搜索栏/动画/气泡长按/日期分组/头像着色）+ 全面代码审查清理 |
+| **v2.4** | 网络预检 + 异常分类处理 + 死代码清除 + 换一批加载反馈 + 清空防误触升级 + IO并行化 + db封装增强 |
+| **v2.3** | 双重截断消除 + UI全量中文化 + Prompt缓存 + 死代码清除 + UUID防碰撞 + 磁盘清理 + 记录恢复 + 前置冷却 |
+| **v2.2** | 横向加载条动画 + 3秒自动回退 + 截图前置校验 + 联系人隔离 + 提示词去AI味 + 批量查重 |
+| **v2.1** | 模型精简为Seed系列 + 快速回复模式 + Java端直接截图链路 |
+| **v2.0** | 双AI(豆包+DeepSeek) → **单AI(豆包)** 架构重构，延时缩短50% |
 
 ## 开发计划
 
-详见 [PRD.md](PRD.md) 中的优先级规划：
+详见 [PRD.md](PRD.md) §15 UI体验优化路线图：
 
-- **P0（核心必做）**：豆包 Vision 接入、全局浮窗、悬浮球动画、增量去重、场景感知
-- **P1（重要功能）**：建议理由展示、换一批、关键词搜索优化
-- **P2（锦上添花）**：更多个性化选项、数据导出等
+- **Phase 1 (P0)**：~~联系人搜索栏~~ / ~~记忆删除Undo~~ — **已完成**
+- **Phase 2 (P1)**：~~Tab切换动画~~ / ~~头像差异化着色~~ / ~~气泡长按菜单~~ / ~~日期分组~~ / 浮窗动画 / 下拉刷新 / 选中反馈 — **大部分已完成**
+- **Phase 3 (P2)**：设置页折叠 / FAB扩展 / Badge徽标 / 骨架屏 / 首次引导
 
 ## License
 

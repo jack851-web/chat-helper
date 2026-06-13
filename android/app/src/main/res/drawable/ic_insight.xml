@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 联系人画像图标（V2 contact_insight 标题前缀） -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="14dp"
+    android:height="14dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="#00BCD4">
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M12,2C9.79,2 8,3.79 8,6C8,8.21 9.79,10 12,10C14.21,10 16,8.21 16,6C16,3.79 14.21,2 12,2zM12,12C9.33,12 4,13.34 4,16L4,18L20,18L20,16C20,13.34 14.67,12 12,12z" />
+</vector>
